@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Trash2, FileDown, PackageX, Search, Eraser, AlertTriangle, GripVertical } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Trash2, FileDown, PackageX, Search, Eraser, AlertTriangle, GripVertical, Tag, Package } from 'lucide-react';
 import { BarcodeItem, BarcodeType } from '../types';
 
 interface BarcodeListProps {
@@ -15,13 +15,17 @@ interface BarcodeListProps {
 const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, onGenerate, onReorder, barcodeType }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+  
+  // Refs for Drag and Drop to maintain state without re-rendering loops
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
   
   const filteredItems = items.filter(item => 
     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.gtin.includes(searchTerm)
   );
 
+  // Sorting is only allowed when not searching/filtering
   const isDraggable = searchTerm === '';
 
   const confirmClearAll = () => {
@@ -30,30 +34,39 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
     setSearchTerm('');
   };
 
-  // Drag Handlers
-  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
-    setDraggedItemIndex(index);
+  // --- Real-time Drag Handlers ---
+
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, position: number) => {
+    dragItem.current = position;
+    // Optional: Add a class to the row being dragged for styling
+    e.currentTarget.classList.add('opacity-50', 'bg-yellow-50');
     e.dataTransfer.effectAllowed = "move";
-    // Set a transparent image or style if needed, but default ghost image is usually fine
-    // e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
-    e.preventDefault();
-    if (draggedItemIndex === null || draggedItemIndex === index) return;
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
-    e.preventDefault();
-    if (draggedItemIndex === null || draggedItemIndex === index) return;
+  const handleDragEnter = (e: React.DragEvent<HTMLTableRowElement>, position: number) => {
+    // This creates the "live sort" effect.
+    // As soon as we hover over another item, we swap them in the state.
     
-    onReorder(draggedItemIndex, index);
-    setDraggedItemIndex(null);
+    if (dragItem.current === null) return;
+    if (dragItem.current === position) return;
+
+    // Execute the reorder in the parent state immediately
+    onReorder(dragItem.current, position);
+    
+    // Update our reference to track the dragged item's new position
+    dragItem.current = position;
   };
 
-  const handleDragEnd = () => {
-    setDraggedItemIndex(null);
+  const handleDragEnd = (e: React.DragEvent<HTMLTableRowElement>) => {
+    // Cleanup styles
+    e.currentTarget.classList.remove('opacity-50', 'bg-yellow-50');
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    // Necessary to allow dropping
+    e.preventDefault();
   };
 
   if (items.length === 0) {
@@ -118,7 +131,8 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
               <tr className="bg-gray-50 border-b border-gray-200">
                 {isDraggable && <th className="px-4 py-4 w-10"></th>}
                 <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Produto</th>
-                <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-48">Código {barcodeType}</th>
+                <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-32 text-center">Tipo</th>
+                <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-48">Código</th>
                 <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-24 text-center">Ação</th>
               </tr>
             </thead>
@@ -129,23 +143,33 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
                     key={item.id} 
                     draggable={isDraggable}
                     onDragStart={(e) => isDraggable && handleDragStart(e, index)}
-                    onDragOver={(e) => isDraggable && handleDragOver(e, index)}
-                    onDrop={(e) => isDraggable && handleDrop(e, index)}
+                    onDragEnter={(e) => isDraggable && handleDragEnter(e, index)}
+                    onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
                     className={`
-                      transition-colors group
-                      ${draggedItemIndex === index ? 'bg-yellow-50 opacity-50' : 'hover:bg-gray-50'}
+                      transition-all duration-200 ease-in-out group hover:bg-gray-50
                       ${isDraggable ? 'cursor-move' : ''}
                     `}
                   >
                     {isDraggable && (
                       <td className="px-4 py-4 text-gray-300">
-                        <GripVertical className="w-4 h-4 mx-auto group-hover:text-gray-500 cursor-grab active:cursor-grabbing" />
+                        <GripVertical className="w-4 h-4 mx-auto text-gray-300 group-hover:text-gray-500 cursor-grab active:cursor-grabbing" />
                       </td>
                     )}
                     <td className="px-6 py-4">
                       <div className="font-semibold text-gray-800">{item.description}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">ID: {item.id.slice(0,8)}</div>
+                      <div className="text-xs text-gray-400 mt-0.5 font-mono">ID: {item.id.slice(0,8)}</div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                        {item.type === 'GTIN-14' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shadow-sm">
+                                <Package className="w-3 h-3" /> GTIN-14
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm">
+                                <Tag className="w-3 h-3" /> GTIN-13
+                            </span>
+                        )}
                     </td>
                     <td className="px-6 py-4">
                        <span className="font-mono text-sm px-2 py-1 rounded bg-gray-100 text-gray-600 group-hover:bg-white group-hover:shadow-sm border border-transparent group-hover:border-gray-200 transition-all">
@@ -166,7 +190,7 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
                 ))
               ) : (
                 <tr>
-                  <td colSpan={isDraggable ? 4 : 3} className="px-6 py-12 text-center text-gray-400 italic">
+                  <td colSpan={isDraggable ? 5 : 4} className="px-6 py-12 text-center text-gray-400 italic">
                     Nenhum item encontrado para "{searchTerm}"
                   </td>
                 </tr>
