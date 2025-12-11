@@ -1,0 +1,5 @@
+{
+  "name": "Gerador de Etiquetas GTIN-13",
+  "description": "Uma ferramenta para gerar arquivos PDF contendo etiquetas de código de barras EAN-13 com descrições personalizadas.",
+  "requestFramePermissions": []
+}
