@@ -15,5 +15,13 @@ export interface ValidationResult {
 export interface LayoutConfig {
   columns: number;
   rows: number;
-  gap: number; // in mm
+  gap?: number; // Legacy simple gap
+  // Precise layout control for standard labels (e.g., Pimaco)
+  marginTop?: number;
+  marginLeft?: number;
+  gapX?: number; // Horizontal space between labels
+  gapY?: number; // Vertical space between labels
+  width?: number; // Specific label width
+  height?: number; // Specific label height
+  formatName?: string; // To display in UI
 }

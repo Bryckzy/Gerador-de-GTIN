@@ -17,8 +17,21 @@ export const generatePDF = (items: BarcodeItem[], layout: LayoutConfig) => {
 
   const { rows, columns } = layout;
   const itemsPerPage = rows * columns;
-  const cellWidth = PAGE_WIDTH / columns;
-  const cellHeight = PAGE_HEIGHT / rows;
+
+  // Logic decision: Dynamic Layout (simple grid) vs Precise Layout (Pimaco/Standard)
+  const isPreciseLayout = layout.width && layout.height;
+
+  // Determine cell dimensions
+  let cellWidth = 0;
+  let cellHeight = 0;
+
+  if (isPreciseLayout) {
+    cellWidth = layout.width!;
+    cellHeight = layout.height!;
+  } else {
+    cellWidth = PAGE_WIDTH / columns;
+    cellHeight = PAGE_HEIGHT / rows;
+  }
 
   items.forEach((item, index) => {
     // Add new page if necessary
@@ -31,10 +44,20 @@ export const generatePDF = (items: BarcodeItem[], layout: LayoutConfig) => {
     const colIndex = positionInPage % columns;
     const rowIndex = Math.floor(positionInPage / columns);
 
-    const xPos = colIndex * cellWidth;
-    const yPos = rowIndex * cellHeight;
+    let xPos = 0;
+    let yPos = 0;
 
-    // Center of the cell
+    if (isPreciseLayout) {
+      // Precise calculation: Margin + (Index * (Size + Gap))
+      xPos = (layout.marginLeft || 0) + (colIndex * (cellWidth + (layout.gapX || 0)));
+      yPos = (layout.marginTop || 0) + (rowIndex * (cellHeight + (layout.gapY || 0)));
+    } else {
+      // Dynamic calculation: Index * Size
+      xPos = colIndex * cellWidth;
+      yPos = rowIndex * cellHeight;
+    }
+
+    // Center of the cell (used for centering elements)
     const centerX = xPos + (cellWidth / 2);
     const centerY = yPos + (cellHeight / 2);
 
@@ -139,12 +162,20 @@ export const generatePDF = (items: BarcodeItem[], layout: LayoutConfig) => {
       doc.setTextColor(0, 0, 0);
     }
 
-    // Grid lines
-    if (rows > 1 || columns > 1) {
+    // Grid lines - Only draw if NOT using precise standard labels (usually standard labels are pre-cut)
+    // Or if user specifically wants debugging lines. 
+    // For now, we only draw light grid lines on dynamic layouts to help cutting.
+    if (!isPreciseLayout && (rows > 1 || columns > 1)) {
        doc.setDrawColor(240); // Very light gray
        doc.rect(xPos, yPos, cellWidth, cellHeight);
     }
+    // Debug helper for precise layout (optional, commented out)
+    // else if (isPreciseLayout) { doc.setDrawColor(200); doc.rect(xPos, yPos, cellWidth, cellHeight); }
   });
 
-  doc.save(`etiquetas-${items[0]?.type || 'barcode'}.pdf`);
+  const filename = layout.formatName 
+    ? `etiquetas-${layout.formatName.toLowerCase().replace(/\s/g, '-')}.pdf`
+    : `etiquetas-${items[0]?.type || 'barcode'}.pdf`;
+
+  doc.save(filename);
 };
