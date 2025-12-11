@@ -1,20 +1,109 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+Gerador de GTIN 13/14 – Etiquetas em PDF
 
-# Run and deploy your AI Studio app
+Uma aplicação desenvolvida em React + TypeScript (Vite) para gerar códigos GTIN-13 e GTIN-14, organizar múltiplas etiquetas e exportá-las em PDF conforme a grade escolhida pelo usuário (ex.: 10 × 5 em folha A4).
 
-This contains everything you need to run your app locally.
+O sistema permite adicionar códigos individualmente ou em massa via copiar e colar — ideal para grandes volumes e operações logísticas.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1OImRKXwrpJuHqm2sHSrc7Vd50aVqdRzS
+🚀 Funcionalidades
+🔢 Geração de GTIN
 
-## Run Locally
+Criação automática de GTIN-13 e GTIN-14
 
-**Prerequisites:**  Node.js
+Cálculo do dígito verificador (checksum)
+
+Edição manual de códigos, quando necessário
+
+📥 Entrada de Dados
+
+Adição individual de GTIN
+
+Importação em massa via copiar/colar (sem CSV)
+
+Detecção e limpeza automática de linhas inválidas
+
+Lista editável com opção de remoção
+
+🖨️ Geração de Etiquetas em PDF
+
+Escolha da grade de impressão (ex.: 10×5 por página A4)
+
+Renderização de:
+
+Código de barras
+
+Valor GTIN abaixo do código
+
+Uso de PDF pronto para impressão (A4 ou layout personalizado)
+
+⚙️ Customização
+
+Quantidade de cópias por item
+
+Tamanho e espaçamento das etiquetas
+
+Formato GTIN (13/14)
+
+Ajuste de margens conforme impressora
+
+🧱 Tecnologias Utilizadas
+
+React + TypeScript
+
+Vite
+
+pdf-lib (ou jsPDF, dependendo da sua implementação)
+
+JsBarcode / bwip-js para geração dos códigos
+
+CSS modular ou TailwindCSS (dependendo da implementação atual)
+
+📦 Instalação
+git clone https://github.com/seu-usuario/seu-repo.git
+cd seu-repo
+npm install
+
+▶️ Executar o projeto
+npm run dev
 
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Aplicação disponível em:
+
+https://gerador-de-gtin.vercel.app
+
+🗂️ Estrutura do Projeto
+/components
+/utils
+App.tsx
+index.tsx
+index.html
+vite.config.ts
+tsconfig.json
+types.ts
+metadata.json
+package.json
+README.md
+
+🧭 Como Usar
+
+Selecione se vai trabalhar com GTIN-13 ou GTIN-14
+
+Adicione códigos:
+
+Digitando individualmente, ou
+
+Colando vários GTINs de uma só vez (uma linha por código)
+
+Escolha a grade de etiquetas (ex.: 10 × 5 A4)
+
+Clique em Gerar PDF
+
+Baixe ou imprima diretamente o arquivo gerado
+
+🤝 Contribuições
+
+Pull requests são bem-vindos!
+Sinta-se à vontade para abrir issues com melhorias, bugs ou novas ideias.
+
+📄 Licença
+
+Distribuído sob a licença MIT.
