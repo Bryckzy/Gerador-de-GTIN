@@ -37,6 +37,15 @@ const App: React.FC = () => {
     setItems([]);
   };
 
+  const handleReorderItems = (fromIndex: number, toIndex: number) => {
+    setItems((prevItems) => {
+      const newItems = [...prevItems];
+      const [movedItem] = newItems.splice(fromIndex, 1);
+      newItems.splice(toIndex, 0, movedItem);
+      return newItems;
+    });
+  };
+
   const handleGeneratePDF = () => {
     generatePDF(items, layoutConfig);
   };
@@ -172,6 +181,7 @@ const App: React.FC = () => {
                  items={items} 
                  onRemove={handleRemoveItem} 
                  onClearAll={handleClearAll}
+                 onReorder={handleReorderItems}
                  onGenerate={handleGeneratePDF}
                  barcodeType={barcodeType}
                />

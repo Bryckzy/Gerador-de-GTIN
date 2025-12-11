@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Plus, AlertCircle, CheckCircle2, FileSpreadsheet, Upload, Download, ClipboardPaste, X } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle2, FileSpreadsheet, Upload, Download, ClipboardPaste, X, Layers } from 'lucide-react';
 import { BarcodeItem, BarcodeType } from '../types';
 import { validateBarcode } from '../utils/validators';
 import * as XLSX from 'xlsx';
@@ -21,6 +21,7 @@ const BarcodeForm: React.FC<BarcodeFormProps> = ({ onAdd, barcodeType }) => {
   // Single
   const [description, setDescription] = useState('');
   const [gtin, setGtin] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const [singleError, setSingleError] = useState<string | null>(null);
 
   // Paste
@@ -47,10 +48,22 @@ const BarcodeForm: React.FC<BarcodeFormProps> = ({ onAdd, barcodeType }) => {
       setSingleError(`Código ${barcodeType} inválido.`);
       return;
     }
+    
+    const qtd = Math.max(1, Math.floor(quantity));
 
-    onAdd([{ description, gtin, type: barcodeType }]);
+    // Create an array with 'qtd' copies of the item
+    const newItems = Array(qtd).fill(null).map(() => ({
+      description,
+      gtin,
+      type: barcodeType
+    }));
+
+    onAdd(newItems);
+    
+    // Reset fields (keep quantity at 1 usually better for UX, or keep last used? Let's reset to 1)
     setDescription('');
     setGtin('');
+    setQuantity(1);
   };
 
   const handleGtinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,8 +239,8 @@ const BarcodeForm: React.FC<BarcodeFormProps> = ({ onAdd, barcodeType }) => {
       <div className="p-6">
         {activeTab === 'single' && (
           <form onSubmit={handleSingleSubmit} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <div className="md:col-span-6 space-y-1">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Descrição</label>
                 <input
                   type="text"
@@ -237,7 +250,7 @@ const BarcodeForm: React.FC<BarcodeFormProps> = ({ onAdd, barcodeType }) => {
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow outline-none transition-all"
                 />
               </div>
-              <div className="space-y-1">
+              <div className="md:col-span-4 space-y-1">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Código {barcodeType}</label>
                 <div className="relative">
                   <input
@@ -258,6 +271,17 @@ const BarcodeForm: React.FC<BarcodeFormProps> = ({ onAdd, barcodeType }) => {
                   )}
                 </div>
               </div>
+              <div className="md:col-span-2 space-y-1">
+                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Qtd.</label>
+                 <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow outline-none font-mono text-center transition-all"
+                 />
+              </div>
             </div>
             
             {singleError && (
@@ -267,7 +291,8 @@ const BarcodeForm: React.FC<BarcodeFormProps> = ({ onAdd, barcodeType }) => {
             )}
 
             <button type="submit" className="w-full bg-brand-yellow hover:bg-[#E5B228] text-brand-black font-bold py-3 rounded-lg shadow-sm hover:shadow transition-all flex justify-center items-center gap-2">
-              <Plus className="w-5 h-5" /> Adicionar à Lista
+              <Plus className="w-5 h-5" /> 
+              {quantity > 1 ? `Adicionar ${quantity} Etiquetas` : 'Adicionar à Lista'}
             </button>
           </form>
         )}

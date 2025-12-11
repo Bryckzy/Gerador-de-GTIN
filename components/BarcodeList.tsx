@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Trash2, FileDown, PackageX, Search, Eraser, AlertTriangle } from 'lucide-react';
+import { Trash2, FileDown, PackageX, Search, Eraser, AlertTriangle, GripVertical } from 'lucide-react';
 import { BarcodeItem, BarcodeType } from '../types';
 
 interface BarcodeListProps {
@@ -8,22 +8,52 @@ interface BarcodeListProps {
   onRemove: (id: string) => void;
   onClearAll: () => void;
   onGenerate: () => void;
+  onReorder: (fromIndex: number, toIndex: number) => void;
   barcodeType: BarcodeType; 
 }
 
-const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, onGenerate, barcodeType }) => {
+const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, onGenerate, onReorder, barcodeType }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
   
   const filteredItems = items.filter(item => 
     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.gtin.includes(searchTerm)
   );
 
+  const isDraggable = searchTerm === '';
+
   const confirmClearAll = () => {
     onClearAll();
     setShowDeleteConfirm(false);
     setSearchTerm('');
+  };
+
+  // Drag Handlers
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    setDraggedItemIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    // Set a transparent image or style if needed, but default ghost image is usually fine
+    // e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    e.preventDefault();
+    if (draggedItemIndex === null || draggedItemIndex === index) return;
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    e.preventDefault();
+    if (draggedItemIndex === null || draggedItemIndex === index) return;
+    
+    onReorder(draggedItemIndex, index);
+    setDraggedItemIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemIndex(null);
   };
 
   if (items.length === 0) {
@@ -86,6 +116,7 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
+                {isDraggable && <th className="px-4 py-4 w-10"></th>}
                 <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Produto</th>
                 <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-48">Código {barcodeType}</th>
                 <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-24 text-center">Ação</th>
@@ -93,8 +124,25 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredItems.length > 0 ? (
-                filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
+                filteredItems.map((item, index) => (
+                  <tr 
+                    key={item.id} 
+                    draggable={isDraggable}
+                    onDragStart={(e) => isDraggable && handleDragStart(e, index)}
+                    onDragOver={(e) => isDraggable && handleDragOver(e, index)}
+                    onDrop={(e) => isDraggable && handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`
+                      transition-colors group
+                      ${draggedItemIndex === index ? 'bg-yellow-50 opacity-50' : 'hover:bg-gray-50'}
+                      ${isDraggable ? 'cursor-move' : ''}
+                    `}
+                  >
+                    {isDraggable && (
+                      <td className="px-4 py-4 text-gray-300">
+                        <GripVertical className="w-4 h-4 mx-auto group-hover:text-gray-500 cursor-grab active:cursor-grabbing" />
+                      </td>
+                    )}
                     <td className="px-6 py-4">
                       <div className="font-semibold text-gray-800">{item.description}</div>
                       <div className="text-xs text-gray-400 mt-0.5">ID: {item.id.slice(0,8)}</div>
@@ -118,7 +166,7 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic">
+                  <td colSpan={isDraggable ? 4 : 3} className="px-6 py-12 text-center text-gray-400 italic">
                     Nenhum item encontrado para "{searchTerm}"
                   </td>
                 </tr>
