@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gerador de Etiquetas GTIN-13</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234F46E5%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 5v14%22/><path d=%22M8 5v14%22/><path d=%22M12 5v14%22/><path d=%22M17 5v14%22/><path d=%22M21 5v14%22/></svg>" />
+    <title>Startools - Gerador de Etiquetas</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23FFC72C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 5v14%22/><path d=%22M8 5v14%22/><path d=%22M12 5v14%22/><path d=%22M17 5v14%22/><path d=%22M21 5v14%22/></svg>" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -14,6 +14,15 @@
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
             },
+            colors: {
+               brand: {
+                 yellow: '#FFC72C', // Pantone 123C
+                 black: '#121212',  // Nice Black
+                 dark: '#1F1F1F',
+                 gray: '#F3F4F6',
+                 silver: '#E5E7EB'
+               }
+            }
           },
         },
       }
@@ -27,13 +36,14 @@
     "lucide-react": "https://aistudiocdn.com/lucide-react@^0.559.0",
     "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
     "jspdf": "https://aistudiocdn.com/jspdf@^3.0.4",
-    "jsbarcode": "https://aistudiocdn.com/jsbarcode@^3.12.1"
+    "jsbarcode": "https://aistudiocdn.com/jsbarcode@^3.12.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
+  <body class="bg-brand-gray text-brand-black antialiased selection:bg-brand-yellow selection:text-brand-black">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

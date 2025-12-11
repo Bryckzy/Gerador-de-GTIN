@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ScanLine, ShoppingBag, Package, CheckCircle2 } from 'lucide-react';
+import { ScanLine, ShoppingBag, Package, CheckCircle2, Wrench, ShieldCheck, Zap } from 'lucide-react';
 import BarcodeForm from './components/BarcodeForm';
 import BarcodeList from './components/BarcodeList';
 import LayoutControl from './components/LayoutControl';
@@ -15,11 +15,10 @@ const App: React.FC = () => {
     columns: 2,
     rows: 5, 
     gap: 0,
-    showOutlines: false // Default to false (clean look)
+    showOutlines: false
   });
   
   const isGtin14 = barcodeType === 'GTIN-14';
-  const themeColor = isGtin14 ? 'amber' : 'indigo';
 
   const handleAddItems = (newItems: Omit<BarcodeItem, 'id'>[]) => {
     const itemsWithIds = newItems.map(item => ({
@@ -43,89 +42,149 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-500 selection:bg-${themeColor}-100 selection:text-${themeColor}-900`}>
-      <div className="max-w-4xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="text-center space-y-2 mb-8">
-          <div className={`inline-flex items-center justify-center p-3 bg-${themeColor}-600 rounded-2xl shadow-lg shadow-${themeColor}-600/20 mb-4 transition-colors duration-500`}>
-            <ScanLine className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-            Gerador de Etiquetas
-          </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Gere etiquetas em massa para seus produtos ou caixas de embarque.
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#F4F6F8] font-sans text-slate-900 pb-12">
+      
+      {/* Brand Header */}
+      <header className="bg-zinc-900 bg-gradient-to-r from-zinc-900 via-[#1a1a1a] to-zinc-900 pt-8 pb-20 border-b border-white/5 relative overflow-hidden">
+         {/* Background Detail */}
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-brand-yellow/5 rounded-[100%] blur-[100px] pointer-events-none opacity-50"></div>
+         
+         {/* Grid Pattern Overlay */}
+         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light"></div>
 
-        {/* Big Mode Switcher */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8">
+         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+               
+               {/* Logo Section */}
+               <div className="flex items-center gap-6 group">
+                  <div className="relative">
+                      <div className="absolute inset-0 bg-brand-yellow blur-lg opacity-40 group-hover:opacity-60 transition-opacity duration-500 rounded-full"></div>
+                      <div className="relative w-16 h-16 bg-gradient-to-br from-brand-yellow to-yellow-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-yellow-500/20 shrink-0 border border-white/10">
+                         <Wrench className="w-8 h-8 text-zinc-900 drop-shadow-sm" strokeWidth={2.5} />
+                      </div>
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <h1 className="text-4xl font-black text-white tracking-tighter leading-none font-sans drop-shadow-lg">
+                      STAR<span className="text-brand-yellow">TOOLS</span>
+                    </h1>
+                    <div className="flex items-center gap-3 mt-2">
+                       <span className="h-px w-8 bg-gradient-to-r from-brand-yellow to-transparent"></span>
+                       <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em] shadow-black drop-shadow-md">
+                         Gerador de Etiquetas
+                       </p>
+                    </div>
+                  </div>
+               </div>
+               
+               {/* Right Info Section */}
+               <div className="flex items-center gap-4">
+                  <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <span className="text-xs font-semibold text-zinc-300">Sistema Online</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-900 rounded-xl px-5 py-2.5 shadow-lg border border-white/10 ring-1 ring-white/5">
+                      <div className="bg-brand-yellow/10 p-1.5 rounded-lg">
+                        <Zap className="w-4 h-4 text-brand-yellow" fill="currentColor" />
+                      </div>
+                      <div className="flex flex-col">
+                         <span className="text-[10px] text-zinc-500 font-bold uppercase leading-none mb-0.5">Versão</span>
+                         <span className="text-sm font-bold text-white leading-none">Enterprise 2.0</span>
+                      </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </header>
+
+      {/* Main Content - Overlapping Card Layout */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
+        
+        {/* Type Selector Bar */}
+        <div className="bg-white rounded-xl shadow-2xl shadow-black/5 border border-gray-100 p-2 flex flex-col sm:flex-row gap-2 mb-8 ring-1 ring-black/5">
           <button
             onClick={() => setBarcodeType('GTIN-13')}
-            className={`relative group p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 text-left ${
+            className={`flex-1 relative group p-5 rounded-lg transition-all duration-300 flex items-center justify-center sm:justify-start gap-4 ${
               !isGtin14 
-                ? 'bg-indigo-50 border-indigo-600 shadow-md' 
-                : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                ? 'bg-gradient-to-br from-brand-yellow to-[#e5b228] text-brand-black shadow-lg shadow-yellow-500/20 translate-y-[-2px]' 
+                : 'hover:bg-gray-50 text-gray-500 bg-white'
             }`}
           >
-            <div className={`p-3 rounded-full ${!isGtin14 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-600'} transition-colors`}>
-              <ShoppingBag className="w-6 h-6" />
+            <div className={`p-3 rounded-xl ${!isGtin14 ? 'bg-black/10 text-brand-black' : 'bg-gray-100 text-gray-500'} transition-colors`}>
+              <ShoppingBag className="w-6 h-6" strokeWidth={isGtin14 ? 2 : 2.5} />
             </div>
-            <div>
-              <h3 className={`font-bold ${!isGtin14 ? 'text-indigo-900' : 'text-slate-700'}`}>GTIN-13 (EAN)</h3>
-              <p className={`text-xs ${!isGtin14 ? 'text-indigo-700' : 'text-slate-500'}`}>Para produtos de varejo</p>
+            <div className="text-left">
+              <h3 className={`font-bold text-base ${!isGtin14 ? 'text-brand-black' : 'text-gray-700'}`}>GTIN-13 (Varejo)</h3>
+              <p className={`text-xs mt-0.5 ${!isGtin14 ? 'text-black/70 font-medium' : 'text-gray-400'}`}>Etiquetas de gôndola e produtos</p>
             </div>
-            {!isGtin14 && <div className="absolute top-3 right-3"><CheckCircle2 className="w-5 h-5 text-indigo-600" /></div>}
+            {!isGtin14 && (
+              <div className="absolute top-4 right-4 bg-white/20 p-1 rounded-full backdrop-blur-sm">
+                <CheckCircle2 className="w-5 h-5 text-brand-black" />
+              </div>
+            )}
           </button>
 
           <button
             onClick={() => setBarcodeType('GTIN-14')}
-            className={`relative group p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 text-left ${
+            className={`flex-1 relative group p-5 rounded-lg transition-all duration-300 flex items-center justify-center sm:justify-start gap-4 ${
               isGtin14 
-                ? 'bg-amber-50 border-amber-600 shadow-md' 
-                : 'bg-white border-slate-200 hover:border-amber-200 hover:bg-slate-50'
+                ? 'bg-gradient-to-br from-brand-yellow to-[#e5b228] text-brand-black shadow-lg shadow-yellow-500/20 translate-y-[-2px]' 
+                : 'hover:bg-gray-50 text-gray-500 bg-white'
             }`}
           >
-            <div className={`p-3 rounded-full ${isGtin14 ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-600'} transition-colors`}>
-              <Package className="w-6 h-6" />
+            <div className={`p-3 rounded-xl ${isGtin14 ? 'bg-black/10 text-brand-black' : 'bg-gray-100 text-gray-500'} transition-colors`}>
+              <Package className="w-6 h-6" strokeWidth={!isGtin14 ? 2 : 2.5} />
             </div>
-            <div>
-              <h3 className={`font-bold ${isGtin14 ? 'text-amber-900' : 'text-slate-700'}`}>GTIN-14 (DUN)</h3>
-              <p className={`text-xs ${isGtin14 ? 'text-amber-800' : 'text-slate-500'}`}>Para caixas de embarque</p>
+            <div className="text-left">
+              <h3 className={`font-bold text-base ${isGtin14 ? 'text-brand-black' : 'text-gray-700'}`}>GTIN-14 (Logística)</h3>
+              <p className={`text-xs mt-0.5 ${isGtin14 ? 'text-black/70 font-medium' : 'text-gray-400'}`}>Etiquetas para caixas master</p>
             </div>
-            {isGtin14 && <div className="absolute top-3 right-3"><CheckCircle2 className="w-5 h-5 text-amber-600" /></div>}
+            {isGtin14 && (
+              <div className="absolute top-4 right-4 bg-white/20 p-1 rounded-full backdrop-blur-sm">
+                <CheckCircle2 className="w-5 h-5 text-brand-black" />
+              </div>
+            )}
           </button>
         </div>
 
-        {/* Main Content */}
-        <main className="space-y-6">
-          <BarcodeForm 
-            onAdd={handleAddItems} 
-            barcodeType={barcodeType}
-          />
+        {/* Workspace Grid */}
+        <main className="grid grid-cols-1 gap-8 pb-12">
+          <section className="animate-in slide-in-from-bottom-4 duration-500 fade-in">
+            <BarcodeForm 
+              onAdd={handleAddItems} 
+              barcodeType={barcodeType}
+            />
+          </section>
           
-          <LayoutControl 
-            config={layoutConfig} 
-            onChange={setLayoutConfig}
-            barcodeType={barcodeType}
-            items={items}
-          />
-          
-          <div className="my-8 border-t border-slate-200"></div>
-          
-          <BarcodeList 
-            items={items} 
-            onRemove={handleRemoveItem} 
-            onClearAll={handleClearAll}
-            onGenerate={handleGeneratePDF}
-            barcodeType={barcodeType}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+             <section className="animate-in slide-in-from-bottom-6 duration-700 fade-in">
+               <LayoutControl 
+                 config={layoutConfig} 
+                 onChange={setLayoutConfig}
+                 barcodeType={barcodeType}
+                 items={items}
+               />
+             </section>
+             
+             <section className="animate-in slide-in-from-bottom-8 duration-1000 fade-in">
+               <BarcodeList 
+                 items={items} 
+                 onRemove={handleRemoveItem} 
+                 onClearAll={handleClearAll}
+                 onGenerate={handleGeneratePDF}
+                 barcodeType={barcodeType}
+               />
+             </section>
+          </div>
         </main>
 
         {/* Footer */}
-        <footer className="text-center text-slate-400 text-sm mt-12 pb-4">
-          <p>&copy; {new Date().getFullYear()} Gerador de Etiquetas. Sistema seguro e processamento local.</p>
+        <footer className="text-center pb-8 pt-4 flex flex-col items-center gap-4">
+           <div className="w-16 h-1 bg-gray-200 rounded-full"></div>
+           <p className="text-sm text-gray-500 font-medium">
+             &copy; {new Date().getFullYear()} <span className="text-brand-black font-bold">Startools Ferramentas</span>. Todos os direitos reservados.
+           </p>
         </footer>
       </div>
     </div>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Trash2, FileDown, PackageX, Search, Eraser } from 'lucide-react';
+import { Trash2, FileDown, PackageX, Search, Eraser, AlertTriangle } from 'lucide-react';
 import { BarcodeItem, BarcodeType } from '../types';
 
 interface BarcodeListProps {
@@ -8,117 +8,107 @@ interface BarcodeListProps {
   onRemove: (id: string) => void;
   onClearAll: () => void;
   onGenerate: () => void;
-  barcodeType: BarcodeType; // For theming
+  barcodeType: BarcodeType; 
 }
 
 const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, onGenerate, barcodeType }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  const isGtin14 = barcodeType === 'GTIN-14';
-  const themeColor = isGtin14 ? 'amber' : 'indigo';
-
   const filteredItems = items.filter(item => 
     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.gtin.includes(searchTerm)
   );
 
-  const handleClearAllConfirm = () => {
-    if (items.length === 0) return;
-    
-    // Using a simple window.confirm is reliable, but let's ensure the button isn't treating it as a submit
-    if (window.confirm(`Tem certeza que deseja remover todos os ${items.length} itens da lista?`)) {
-      onClearAll();
-      setSearchTerm('');
-    }
+  const confirmClearAll = () => {
+    onClearAll();
+    setShowDeleteConfirm(false);
+    setSearchTerm('');
   };
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
-        <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-          <PackageX className="w-8 h-8 text-slate-400" />
+      <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+        <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <PackageX className="w-10 h-10 text-gray-300" />
         </div>
-        <h3 className="text-lg font-medium text-slate-900">Nenhum item adicionado</h3>
-        <p className="text-slate-500 mt-1">Adicione descrições e códigos acima para gerar suas etiquetas.</p>
+        <h3 className="text-xl font-bold text-gray-800">Lista Vazia</h3>
+        <p className="text-gray-500 mt-2 max-w-sm mx-auto text-sm">
+          Adicione itens manualmente, cole uma lista ou importe uma planilha.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-        <h2 className="text-lg font-semibold text-slate-800">
-          Itens para Impressão 
-          <span className="text-slate-400 text-sm font-normal ml-2">
-            ({filteredItems.length !== items.length ? `${filteredItems.length} de ` : ''}{items.length} itens)
-          </span>
-        </h2>
-        
-        <div className="flex gap-2">
-          <button
-            type="button" // Explicitly button type
-            onClick={handleClearAllConfirm}
-            className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 font-medium rounded-lg transition-colors flex items-center gap-2 text-sm"
-          >
-            <Eraser className="w-4 h-4" />
-            Limpar Lista
-          </button>
-          
-          <button
-            type="button"
-            onClick={onGenerate}
-            className={`px-6 py-2 bg-${themeColor}-600 hover:bg-${themeColor}-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm shadow-${themeColor}-600/20 text-sm`}
-          >
-            <FileDown className="w-4 h-4" />
-            Baixar PDF
-          </button>
-        </div>
+    <div className="space-y-6">
+      
+      {/* Action Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+         
+         <div className="relative w-full md:w-96">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Filtrar lista..."
+              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow outline-none text-sm transition-all"
+            />
+         </div>
+
+         <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex-1 md:flex-none px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm border border-red-100"
+            >
+              <Eraser className="w-4 h-4" />
+              Limpar ({items.length})
+            </button>
+            
+            <button
+              type="button"
+              onClick={onGenerate}
+              className="flex-1 md:flex-none px-6 py-2 bg-brand-black hover:bg-gray-900 text-brand-yellow font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/10 text-sm transform hover:-translate-y-0.5"
+            >
+              <FileDown className="w-4 h-4" />
+              Gerar PDF
+            </button>
+         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-slate-400" />
-        </div>
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Pesquisar por descrição ou código..."
-          className={`block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-${themeColor}-500 focus:border-${themeColor}-500 sm:text-sm`}
-        />
-      </div>
-
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-4 font-semibold text-slate-700">Descrição</th>
-                <th className="px-6 py-4 font-semibold text-slate-700">Tipo</th>
-                <th className="px-6 py-4 font-semibold text-slate-700 w-48">Código</th>
-                <th className="px-6 py-4 font-semibold text-slate-700 w-24 text-center">Ações</th>
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs">Produto</th>
+                <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-48">Código {barcodeType}</th>
+                <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-24 text-center">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-gray-100">
               {filteredItems.length > 0 ? (
                 filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{item.description}</td>
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        item.type === 'GTIN-14' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'
-                      }`}>
-                        {item.type}
-                      </span>
+                      <div className="font-semibold text-gray-800">{item.description}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">ID: {item.id.slice(0,8)}</div>
                     </td>
-                    <td className="px-6 py-4 font-mono text-slate-600">{item.gtin}</td>
+                    <td className="px-6 py-4">
+                       <span className="font-mono text-sm px-2 py-1 rounded bg-gray-100 text-gray-600 group-hover:bg-white group-hover:shadow-sm border border-transparent group-hover:border-gray-200 transition-all">
+                         {item.gtin}
+                       </span>
+                    </td>
                     <td className="px-6 py-4 text-center">
                       <button
                         type="button"
                         onClick={() => onRemove(item.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                         title="Remover item"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -128,7 +118,7 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500 italic">
+                  <td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic">
                     Nenhum item encontrado para "{searchTerm}"
                   </td>
                 </tr>
@@ -137,6 +127,35 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+           <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                 <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-center text-gray-900">Excluir tudo?</h3>
+              <p className="text-center text-gray-500 mt-2 mb-6">
+                 Você está prestes a remover todos os {items.length} itens da lista. Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3">
+                 <button 
+                   onClick={() => setShowDeleteConfirm(false)}
+                   className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
+                 >
+                   Cancelar
+                 </button>
+                 <button 
+                   onClick={confirmClearAll}
+                   className="flex-1 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 shadow-md shadow-red-500/20"
+                 >
+                   Sim, excluir
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
