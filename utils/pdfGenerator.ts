@@ -1,3 +1,4 @@
+
 import jsPDF from 'jspdf';
 import JsBarcode from 'jsbarcode';
 import { BarcodeItem, LayoutConfig } from '../types';
@@ -15,23 +16,18 @@ export const generatePDF = (items: BarcodeItem[], layout: LayoutConfig) => {
     format: 'a4'
   });
 
-  const { rows, columns } = layout;
+  const { rows, columns, showOutlines } = layout;
   const itemsPerPage = rows * columns;
 
-  // Logic decision: Dynamic Layout (simple grid) vs Precise Layout (Pimaco/Standard)
-  const isPreciseLayout = layout.width && layout.height;
-
-  // Determine cell dimensions
-  let cellWidth = 0;
-  let cellHeight = 0;
-
-  if (isPreciseLayout) {
-    cellWidth = layout.width!;
-    cellHeight = layout.height!;
-  } else {
-    cellWidth = PAGE_WIDTH / columns;
-    cellHeight = PAGE_HEIGHT / rows;
-  }
+  // Standardize values (fallback to 0 if undefined)
+  const ml = layout.marginLeft || 0;
+  const mt = layout.marginTop || 0;
+  const gapX = layout.gapX || 0;
+  const gapY = layout.gapY || 0;
+  
+  // Calculate cell dimensions if dynamic
+  let cellWidth = layout.width || (PAGE_WIDTH / columns);
+  let cellHeight = layout.height || (PAGE_HEIGHT / rows);
 
   items.forEach((item, index) => {
     // Add new page if necessary
@@ -44,133 +40,132 @@ export const generatePDF = (items: BarcodeItem[], layout: LayoutConfig) => {
     const colIndex = positionInPage % columns;
     const rowIndex = Math.floor(positionInPage / columns);
 
-    let xPos = 0;
-    let yPos = 0;
+    // Exact Position Calculation matching the Preview logic
+    // Left = Margin + (Col * (Width + Gap))
+    const xPos = ml + (colIndex * (cellWidth + gapX));
+    const yPos = mt + (rowIndex * (cellHeight + gapY));
 
-    if (isPreciseLayout) {
-      // Precise calculation: Margin + (Index * (Size + Gap))
-      xPos = (layout.marginLeft || 0) + (colIndex * (cellWidth + (layout.gapX || 0)));
-      yPos = (layout.marginTop || 0) + (rowIndex * (cellHeight + (layout.gapY || 0)));
-    } else {
-      // Dynamic calculation: Index * Size
-      xPos = colIndex * cellWidth;
-      yPos = rowIndex * cellHeight;
+    // Center of the cell
+    const centerX = xPos + (cellWidth / 2);
+    // Vertical centering will happen dynamically based on content
+
+    // --- Borders / Outlines (Toggleable) ---
+    if (showOutlines) {
+      doc.setDrawColor(150); // Gray
+      doc.setLineWidth(0.1);
+      // Use rounded rect if radius is defined
+      if (layout.cornerRadius) {
+          // Convert px radius roughly to mm (approx div by 3.78, but visually 2-3mm is standard)
+          const radiusMM = layout.cornerRadius ? 2 : 0; 
+          doc.roundedRect(xPos, yPos, cellWidth, cellHeight, radiusMM, radiusMM, 'S');
+      } else {
+          doc.rect(xPos, yPos, cellWidth, cellHeight);
+      }
     }
 
-    // Center of the cell (used for centering elements)
-    const centerX = xPos + (cellWidth / 2);
-    const centerY = yPos + (cellHeight / 2);
-
-    // Dynamic sizing based on cell size
-    const maxBarcodeWidth = Math.min(cellWidth * 0.8, 60); 
-    const barcodeHeight = Math.min(cellHeight * 0.35, 25); 
+    // --- Barcode Generation ---
+    // Safe area margin inside the label (e.g., 2mm on each side)
+    const safeMargin = 2; 
+    const maxBarcodeWidth = cellWidth - (safeMargin * 2);
+    // Barcode takes up roughly 40-50% of height, but capped for small labels
+    const maxBarcodeHeight = Math.min(cellHeight * 0.45, 20); 
 
     const canvas = document.createElement('canvas');
     try {
       JsBarcode(canvas, item.gtin, {
         format: item.type === 'GTIN-14' ? "ITF14" : "EAN13",
-        width: 2,
-        height: 50,
+        width: 4, // High res base
+        height: 100,
         displayValue: true,
         font: "Helvetica",
-        fontSize: 16,
+        fontOptions: "bold",
+        fontSize: 14,
+        textMargin: 2,
         margin: 0
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 1.0);
       const imgProps = doc.getImageProperties(imgData);
       
-      const pdfImgWidth = maxBarcodeWidth;
-      const pdfImgHeight = (imgProps.height * pdfImgWidth) / imgProps.width;
+      // Calculate final PDF dimensions maintaining aspect ratio
+      let pdfImgWidth = maxBarcodeWidth;
+      let pdfImgHeight = (imgProps.height * pdfImgWidth) / imgProps.width;
 
-      // Position: Place barcode slightly below absolute center, leaving room on top
-      const barcodeY = centerY - (pdfImgHeight / 2) + 5; 
+      // Ensure height doesn't exceed limit
+      if (pdfImgHeight > maxBarcodeHeight) {
+          pdfImgHeight = maxBarcodeHeight;
+          pdfImgWidth = (imgProps.width * pdfImgHeight) / imgProps.height;
+      }
+
+      // Position: Anchor to bottom area, leaving space above for text
+      // We push it slightly down from absolute center to give text more room
+      // Calculate Bottom Anchor: Y + Height - BottomPadding (3mm) - BarcodeHeight
+      const barcodeY = yPos + cellHeight - pdfImgHeight - 3; 
 
       doc.addImage(imgData, 'JPEG', centerX - (pdfImgWidth / 2), barcodeY, pdfImgWidth, pdfImgHeight);
 
-      // --- Smart Text Sizing & Positioning ---
+      // --- Text Generation (Auto-Fit, No Truncation) ---
       
       doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
       
       // Boundaries for text
-      // We define a safe area starting 2mm from top of cell and ending 1mm above the barcode
-      const topBoundary = yPos + 2; 
-      const bottomBoundary = barcodeY - 1;
+      const topBoundary = yPos + 3; // 3mm from top edge
+      const bottomBoundary = barcodeY - 1; // 1mm above barcode
       const maxAvailableHeight = bottomBoundary - topBoundary;
+      const maxTextWidth = cellWidth - 4; // 2mm padding sides
       
-      // If cell is extremely small, available height might be tiny. Handle gracefully.
-      if (maxAvailableHeight > 2) {
-        const maxTextWidth = cellWidth * 0.92; // Use 92% of cell width
-        let fontSize = Math.min(14, (cellWidth / 4)); // Start larger
-        const minFontSize = 6;
-        
+      if (maxAvailableHeight > 3) {
+        let fontSize = 16; // Start big
+        const minFontSize = 5; // Absolute minimum readable
         let splitText: string[] = [];
-        let finalOneLineHeight = 0;
-        
-        // Loop: Reduce font size until text fits in the available vertical space
+        let lineHeight = 0;
+        let fits = false;
+
+        // Recursive fitting loop
         while (fontSize >= minFontSize) {
-          doc.setFontSize(fontSize);
-          splitText = doc.splitTextToSize(item.description, maxTextWidth);
-          
-          const lineHeightFactor = 1.15;
-          const oneLineHeight = fontSize * 0.3527 * lineHeightFactor; // convert pt to mm
-          const totalTextHeight = splitText.length * oneLineHeight;
+           doc.setFontSize(fontSize);
+           splitText = doc.splitTextToSize(item.description, maxTextWidth);
+           
+           // Calculate total height of this text block
+           // 1 pt = 0.3527 mm. Line height factor approx 1.15
+           const singleLineHeight = fontSize * 0.3527 * 1.15; 
+           const totalTextHeight = splitText.length * singleLineHeight;
 
-          if (totalTextHeight <= maxAvailableHeight) {
-            finalOneLineHeight = oneLineHeight;
-            break;
-          }
-          
-          fontSize -= 0.5;
-        }
-
-        // Fallback: If still doesn't fit at minFontSize, truncate lines
-        if (finalOneLineHeight === 0) {
-             // Calculate height for min font size
-             doc.setFontSize(minFontSize);
-             splitText = doc.splitTextToSize(item.description, maxTextWidth);
-             finalOneLineHeight = minFontSize * 0.3527 * 1.15;
-        }
-
-        const currentTotalHeight = splitText.length * finalOneLineHeight;
-        if (currentTotalHeight > maxAvailableHeight) {
-           const maxLines = Math.floor(maxAvailableHeight / finalOneLineHeight);
-           if (maxLines > 0) {
-               splitText = splitText.slice(0, maxLines);
-               const lastIndex = splitText.length - 1;
-               // Add ellipsis if we cut off text
-               if (splitText[lastIndex].length > 3) {
-                   splitText[lastIndex] = splitText[lastIndex].slice(0, -2) + "...";
-               }
-           } else {
-               splitText = []; // Space is too small for even one line
+           if (totalTextHeight <= maxAvailableHeight) {
+             lineHeight = singleLineHeight;
+             fits = true;
+             break;
            }
+           
+           fontSize -= 0.5; // Reduce size
         }
 
-        // Draw text anchoring the bottom line to `bottomBoundary`
-        if (splitText.length > 0) {
-            const textStartY = bottomBoundary - ((splitText.length - 1) * finalOneLineHeight);
-            doc.text(splitText, centerX, textStartY, { align: 'center' });
+        // Even if it doesn't fit at minFontSize, we print it anyway (per request "always whole title")
+        if (!fits) {
+            doc.setFontSize(minFontSize);
+            splitText = doc.splitTextToSize(item.description, maxTextWidth);
+            lineHeight = minFontSize * 0.3527 * 1.15;
         }
+
+        // Center vertically in the available space above barcode
+        const totalBlockHeight = splitText.length * lineHeight;
+        // Vertically center the text block in the space between top edge and barcode
+        const textStartY = topBoundary + ((maxAvailableHeight - totalBlockHeight) / 2) + lineHeight - (lineHeight * 0.25);
+
+        // Draw line by line
+        splitText.forEach((line, i) => {
+            doc.text(line, centerX, textStartY + (i * lineHeight), { align: 'center' });
+        });
       }
 
     } catch (error) {
       console.error("Error generating barcode for", item.gtin, error);
       doc.setFontSize(8);
       doc.setTextColor(255, 0, 0);
-      doc.text(`Erro: ${item.gtin}`, centerX, centerY, { align: 'center' });
+      doc.text(`Erro`, centerX, yPos + (cellHeight/2), { align: 'center' });
       doc.setTextColor(0, 0, 0);
     }
-
-    // Grid lines - Only draw if NOT using precise standard labels (usually standard labels are pre-cut)
-    // Or if user specifically wants debugging lines. 
-    // For now, we only draw light grid lines on dynamic layouts to help cutting.
-    if (!isPreciseLayout && (rows > 1 || columns > 1)) {
-       doc.setDrawColor(240); // Very light gray
-       doc.rect(xPos, yPos, cellWidth, cellHeight);
-    }
-    // Debug helper for precise layout (optional, commented out)
-    // else if (isPreciseLayout) { doc.setDrawColor(200); doc.rect(xPos, yPos, cellWidth, cellHeight); }
   });
 
   const filename = layout.formatName 

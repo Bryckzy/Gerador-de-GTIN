@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Trash2, FileDown, PackageX, Search, Eraser } from 'lucide-react';
 import { BarcodeItem, BarcodeType } from '../types';
@@ -22,7 +23,10 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
   );
 
   const handleClearAllConfirm = () => {
-    if (window.confirm('Tem certeza que deseja remover todos os itens da lista?')) {
+    if (items.length === 0) return;
+    
+    // Using a simple window.confirm is reliable, but let's ensure the button isn't treating it as a submit
+    if (window.confirm(`Tem certeza que deseja remover todos os ${items.length} itens da lista?`)) {
       onClearAll();
       setSearchTerm('');
     }
@@ -53,6 +57,7 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
         
         <div className="flex gap-2">
           <button
+            type="button" // Explicitly button type
             onClick={handleClearAllConfirm}
             className="px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 font-medium rounded-lg transition-colors flex items-center gap-2 text-sm"
           >
@@ -61,6 +66,7 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
           </button>
           
           <button
+            type="button"
             onClick={onGenerate}
             className={`px-6 py-2 bg-${themeColor}-600 hover:bg-${themeColor}-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 shadow-sm shadow-${themeColor}-600/20 text-sm`}
           >
@@ -110,6 +116,7 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
                     <td className="px-6 py-4 font-mono text-slate-600">{item.gtin}</td>
                     <td className="px-6 py-4 text-center">
                       <button
+                        type="button"
                         onClick={() => onRemove(item.id)}
                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                         title="Remover item"

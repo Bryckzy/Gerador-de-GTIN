@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ScanLine, ShoppingBag, Package, CheckCircle2 } from 'lucide-react';
 import BarcodeForm from './components/BarcodeForm';
@@ -12,8 +13,9 @@ const App: React.FC = () => {
   
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>({
     columns: 2,
-    rows: 5, // Default to 10 items per page
-    gap: 0
+    rows: 5, 
+    gap: 0,
+    showOutlines: false // Default to false (clean look)
   });
   
   const isGtin14 = barcodeType === 'GTIN-14';
@@ -107,6 +109,7 @@ const App: React.FC = () => {
             config={layoutConfig} 
             onChange={setLayoutConfig}
             barcodeType={barcodeType}
+            items={items}
           />
           
           <div className="my-8 border-t border-slate-200"></div>

@@ -1,3 +1,4 @@
+
 export type BarcodeType = 'GTIN-13' | 'GTIN-14';
 
 export interface BarcodeItem {
@@ -23,5 +24,7 @@ export interface LayoutConfig {
   gapY?: number; // Vertical space between labels
   width?: number; // Specific label width
   height?: number; // Specific label height
+  cornerRadius?: number; // Radius for rounded corners (PDF & Preview)
   formatName?: string; // To display in UI
+  showOutlines?: boolean; // Toggle borders in PDF
 }
