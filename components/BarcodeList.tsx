@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Trash2, FileDown, PackageX, Search, Eraser, AlertTriangle, GripVertical, Tag, Package } from 'lucide-react';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { BarcodeItem, BarcodeType } from '../types';
 
 interface BarcodeListProps {
@@ -16,16 +17,22 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  // Refs for Drag and Drop to maintain state without re-rendering loops
+  // Animation hook - smooth transitions
+  const [animationParent] = useAutoAnimate({
+    duration: 250,
+    easing: 'ease-in-out'
+  });
+
+  // Refs for Drag and Drop
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
+  const lastReorderTime = useRef<number>(0); // New ref to control speed
   
   const filteredItems = items.filter(item => 
     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.gtin.includes(searchTerm)
   );
 
-  // Sorting is only allowed when not searching/filtering
   const isDraggable = searchTerm === '';
 
   const confirmClearAll = () => {
@@ -38,27 +45,38 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
 
   const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, position: number) => {
     dragItem.current = position;
-    // Optional: Add a class to the row being dragged for styling
-    e.currentTarget.classList.add('opacity-50', 'bg-yellow-50');
     e.dataTransfer.effectAllowed = "move";
+    
+    // Create a ghost image if needed, or rely on browser default.
+    // Adding a slight delay to class changes ensures the drag image is captured fully opaque
+    // before we style the row in the DOM.
+    setTimeout(() => {
+        if (e.target instanceof HTMLElement) {
+           e.target.classList.add('opacity-50', 'bg-yellow-50');
+        }
+    }, 0);
   };
 
   const handleDragEnter = (e: React.DragEvent<HTMLTableRowElement>, position: number) => {
-    // This creates the "live sort" effect.
-    // As soon as we hover over another item, we swap them in the state.
+    e.preventDefault();
     
     if (dragItem.current === null) return;
     if (dragItem.current === position) return;
 
-    // Execute the reorder in the parent state immediately
+    // THROTTLE FIX: Prevent the "crazy" jitter.
+    // We only allow a reorder if enough time has passed since the last one.
+    const now = Date.now();
+    if (now - lastReorderTime.current < 200) return; 
+
+    // Execute the reorder
     onReorder(dragItem.current, position);
     
-    // Update our reference to track the dragged item's new position
+    // Update trackers
     dragItem.current = position;
+    lastReorderTime.current = now;
   };
 
   const handleDragEnd = (e: React.DragEvent<HTMLTableRowElement>) => {
-    // Cleanup styles
     e.currentTarget.classList.remove('opacity-50', 'bg-yellow-50');
     dragItem.current = null;
     dragOverItem.current = null;
@@ -136,7 +154,8 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
                 <th className="px-6 py-4 font-bold text-gray-600 uppercase tracking-wider text-xs w-24 text-center">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            {/* The ref here activates the auto-animate logic for all direct children (tr) */}
+            <tbody ref={animationParent} className="divide-y divide-gray-100">
               {filteredItems.length > 0 ? (
                 filteredItems.map((item, index) => (
                   <tr 
@@ -147,32 +166,33 @@ const BarcodeList: React.FC<BarcodeListProps> = ({ items, onRemove, onClearAll, 
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
                     className={`
-                      transition-all duration-200 ease-in-out group hover:bg-gray-50
-                      ${isDraggable ? 'cursor-move' : ''}
+                      group transition-colors duration-200
+                      ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}
+                      hover:bg-gray-50
                     `}
                   >
                     {isDraggable && (
                       <td className="px-4 py-4 text-gray-300">
-                        <GripVertical className="w-4 h-4 mx-auto text-gray-300 group-hover:text-gray-500 cursor-grab active:cursor-grabbing" />
+                        <GripVertical className="w-4 h-4 mx-auto text-gray-300 group-hover:text-gray-500" />
                       </td>
                     )}
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-800">{item.description}</div>
-                      <div className="text-xs text-gray-400 mt-0.5 font-mono">ID: {item.id.slice(0,8)}</div>
+                      <div className="font-semibold text-gray-800 select-none">{item.description}</div>
+                      <div className="text-xs text-gray-400 mt-0.5 font-mono select-none">ID: {item.id.slice(0,8)}</div>
                     </td>
                     <td className="px-6 py-4 text-center">
                         {item.type === 'GTIN-14' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shadow-sm">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shadow-sm select-none">
                                 <Package className="w-3 h-3" /> GTIN-14
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm select-none">
                                 <Tag className="w-3 h-3" /> GTIN-13
                             </span>
                         )}
                     </td>
                     <td className="px-6 py-4">
-                       <span className="font-mono text-sm px-2 py-1 rounded bg-gray-100 text-gray-600 group-hover:bg-white group-hover:shadow-sm border border-transparent group-hover:border-gray-200 transition-all">
+                       <span className="font-mono text-sm px-2 py-1 rounded bg-gray-100 text-gray-600 group-hover:bg-white group-hover:shadow-sm border border-transparent group-hover:border-gray-200 transition-all select-none">
                          {item.gtin}
                        </span>
                     </td>
